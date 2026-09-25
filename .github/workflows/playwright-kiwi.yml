@@ -1,0 +1,40 @@
+name: Playwright Tests with Kiwi TCMS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Get the code from GitHub
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install project packages
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python packages
+        run: pip install kiwitcms-api
+
+      - name: Run Playwright tests and update Kiwi TCMS
+        env:
+          KIWI_URL: ${{ secrets.KIWI_URL }}
+          KIWI_USERNAME: ${{ secrets.KIWI_USERNAME }}
+          KIWI_PASSWORD: ${{ secrets.KIWI_PASSWORD }}
+          KIWI_PLAN_ID: ${{ secrets.KIWI_PLAN_ID }}
+        run: npx playwright test
