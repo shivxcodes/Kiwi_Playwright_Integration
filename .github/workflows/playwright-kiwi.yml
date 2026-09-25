@@ -29,7 +29,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install Python packages
-        run: pip install kiwitcms-api
+        run: pip install tcms-api
 
       - name: Run Playwright tests and update Kiwi TCMS
         env:
