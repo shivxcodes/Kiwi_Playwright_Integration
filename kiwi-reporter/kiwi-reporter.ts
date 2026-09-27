@@ -8,17 +8,18 @@ import type {
 
 import { spawnSync } from 'child_process';
 
+const PYTHON = process.env.PYTHON_BIN || 'python';
+
 class KiwiReporter implements Reporter {
 
   onBegin(config: FullConfig, suite: any) {
     console.log('Kiwi Reporter: Creating new Test Run...');
 
     const create = spawnSync(
-      'py',
+      PYTHON,
       ['kiwi_create_run.py'],
       {
         stdio: 'inherit',
-        shell: true,
         env: process.env,
       }
     );
@@ -83,7 +84,7 @@ class KiwiReporter implements Reporter {
 
     // Run the Python Kiwi updater.
     const update = spawnSync(
-      'py',
+      PYTHON,
       [
         'kiwi_update.py',
         caseId,
@@ -91,7 +92,6 @@ class KiwiReporter implements Reporter {
       ],
       {
         stdio: 'inherit',
-        shell: true,
         env: process.env,
       }
     );

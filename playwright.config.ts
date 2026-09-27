@@ -27,11 +27,10 @@ export default defineConfig({
 
   // Settings shared by all tests
   use: {
-    // We are using the installed Google Chrome browser
-    channel: 'chrome',
-
-    // Show browser actions while running
-    headless: false,
+    // Show browser actions while running on your own computer,
+    // but run without a visible window when on GitHub Actions
+    // (GitHub's cloud computer has no screen to show a window on).
+    headless: !!process.env.CI,
 
     // Collect trace when retrying a failed test
     trace: 'on-first-retry',
@@ -43,7 +42,6 @@ export default defineConfig({
       name: 'Google Chrome',
       use: {
         ...devices['Desktop Chrome'],
-        channel: 'chrome',
       },
     },
   ],
