@@ -1,4 +1,4 @@
-name: Playwright Tests with Kiwi TCMS
+name: Playwright Tests with Kiwi TCMS and TestRail
 
 on:
   push:
@@ -35,12 +35,19 @@ jobs:
       - name: Verify tcms_api is importable
         run: python -c "import tcms_api; print('tcms_api OK', tcms_api.__file__)"
 
-      - name: Run Playwright tests and update Kiwi TCMS
+      - name: Generate BDD tests from feature files
+        run: npx bddgen
+
+      - name: Run Playwright tests and update Kiwi TCMS + TestRail
         env:
           KIWI_URL: ${{ secrets.KIWI_URL }}
           KIWI_USERNAME: ${{ secrets.KIWI_USERNAME }}
           KIWI_PASSWORD: ${{ secrets.KIWI_PASSWORD }}
           KIWI_PLAN_ID: ${{ secrets.KIWI_PLAN_ID }}
+          TESTRAIL_URL: ${{ secrets.TESTRAIL_URL }}
+          TESTRAIL_EMAIL: ${{ secrets.TESTRAIL_EMAIL }}
+          TESTRAIL_API_KEY: ${{ secrets.TESTRAIL_API_KEY }}
+          TESTRAIL_PROJECT_ID: ${{ secrets.TESTRAIL_PROJECT_ID }}
         run: npx playwright test
 
       - name: Upload Playwright report

@@ -1,11 +1,25 @@
+import 'dotenv/config';
 import { defineConfig, devices } from '@playwright/test';
+import type { ReporterDescription } from '@playwright/test';
+import { defineBddConfig } from 'playwright-bdd';
 
-/**
- * Playwright configuration
- */
+// Tell playwright-bdd where to find our .feature files
+// and our step definition files.
+const testDir = defineBddConfig({
+  features: 'features/*.feature',
+  steps: 'features/steps/*.ts',
+});
+
+// Kiwi runs locally only (skipped in CI). TestRail runs everywhere.
+const reporters: ReporterDescription[] = [
+  ['html'],
+  ...(process.env.SKIP_KIWI ? [] : ([['./kiwi-reporter/kiwi-reporter.ts']] as ReporterDescription[])),
+  ['./testrail-reporter/testrail-reporter.ts'],
+];
+
 export default defineConfig({
-  // Folder where our test files are located
-  testDir: './tests',
+  // Use the folder that playwright-bdd generates from our feature files
+  testDir,
 
   // Run tests in parallel
   fullyParallel: true,
@@ -19,20 +33,12 @@ export default defineConfig({
   // Use one worker in CI
   workers: process.env.CI ? 1 : undefined,
 
-  // HTML test report
-  reporter: [
-  ['html'],
-  ['./kiwi-reporter/kiwi-reporter.ts']
-],
+  // HTML report + Kiwi (local only) + TestRail
+  reporter: reporters,
 
   // Settings shared by all tests
   use: {
-    // Show browser actions while running on your own computer,
-    // but run without a visible window when on GitHub Actions
-    // (GitHub's cloud computer has no screen to show a window on).
     headless: !!process.env.CI,
-
-    // Collect trace when retrying a failed test
     trace: 'on-first-retry',
   },
 

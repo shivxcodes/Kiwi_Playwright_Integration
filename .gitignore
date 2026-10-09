@@ -7,3 +7,5 @@ node_modules/
 /playwright/.cache/
 /playwright/.auth/
 .kiwi_run_id
+.env
+.features-gen/
