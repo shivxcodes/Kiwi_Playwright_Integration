@@ -66,18 +66,30 @@ class TestRailReporter implements Reporter {
       const caseIds = [...this.results.keys()];
       const stamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
 
-      const run = await this.api('POST', `add_run/${this.projectId}`, {
-        name: `Playwright Automated Run - ${stamp}`,
-        description: process.env.CI ? 'Triggered from GitHub Actions' : 'Triggered locally',
-        include_all: false,
-        case_ids: caseIds,
-      });
+      // If a TestRail run ID was passed in (button in TestRail), report into it.
+      // Otherwise create a new run.
+      let runId: number;
+      const rawRunId = (process.env.TESTRAIL_RUN_ID || '').trim();
+      if (/^\d+$/.test(rawRunId)) {
+        runId = Number(rawRunId);
+      } else {
+        if (rawRunId) {
+          console.warn(`[TestRail] Ignoring TESTRAIL_RUN_ID "${rawRunId}" because it is not a number. Creating a new run.`);
+        }
+        const run = await this.api('POST', `add_run/${this.projectId}`, {
+          name: `Playwright Automated Run - ${stamp}`,
+          description: process.env.CI ? 'Triggered from GitHub Actions' : 'Triggered locally',
+          include_all: false,
+          case_ids: caseIds,
+        });
+        runId = run.id;
+      }
 
-      await this.api('POST', `add_results_for_cases/${run.id}`, {
+      await this.api('POST', `add_results_for_cases/${runId}`, {
         results: [...this.results.values()],
       });
 
-      console.log(`[TestRail] Run #${run.id} created with ${caseIds.length} result(s): ${this.baseUrl}/index.php?/runs/view/${run.id}`);
+      console.log(`[TestRail] Run #${runId} reported with ${caseIds.length} result(s): ${this.baseUrl}/index.php?/runs/view/${runId}`);
     } catch (err) {
       // Never fail the test run because of a reporting problem
       console.error('[TestRail] Failed to report results:', err);

@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      testrail_run_id:
+        description: 'TestRail run ID (optional)'
+        required: false
+        default: ''
 
 jobs:
   test:
@@ -22,7 +27,7 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+        run: npx playwright install --with-deps chromium
 
       - name: Set up Python
         uses: actions/setup-python@v5
