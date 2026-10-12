@@ -72,7 +72,9 @@ class TestRailReporter implements Reporter {
       const rawRunId = (process.env.TESTRAIL_RUN_ID || '').trim();
       if (/^\d+$/.test(rawRunId)) {
         runId = Number(rawRunId);
+        console.log(`[TestRail] Run ID received from GitHub input: R${runId}. Reporting into it.`);
       } else {
+        console.log('[TestRail] No run ID received. Creating a new run.');
         if (rawRunId) {
           console.warn(`[TestRail] Ignoring TESTRAIL_RUN_ID "${rawRunId}" because it is not a number. Creating a new run.`);
         }

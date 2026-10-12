@@ -53,6 +53,7 @@ jobs:
           TESTRAIL_EMAIL: ${{ secrets.TESTRAIL_EMAIL }}
           TESTRAIL_API_KEY: ${{ secrets.TESTRAIL_API_KEY }}
           TESTRAIL_PROJECT_ID: ${{ secrets.TESTRAIL_PROJECT_ID }}
+          TESTRAIL_RUN_ID: ${{ github.event.inputs.testrail_run_id }}
         run: npx playwright test
 
       - name: Upload Playwright report
