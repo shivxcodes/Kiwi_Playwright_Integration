@@ -1,0 +1,102 @@
+name: Pull Request Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'create-new-pr'
+        type: choice
+        options:
+          - check-open-prs
+          - close-pr-2
+          - create-new-pr
+          - full-cycle
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  automate-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up environment variables
+        run: |
+          echo "REPO_URL=https://api.github.com/repos/shivxcodes/Kiwi_Playwright_Integration" >> $GITHUB_ENV
+          echo "PR_NUMBER=2" >> $GITHUB_ENV
+          echo "HEAD_BRANCH=feature/api-practice" >> $GITHUB_ENV
+          echo "BASE_BRANCH=main" >> $GITHUB_ENV
+
+      - name: Check Open PRs
+        if: github.event.inputs.action == 'check-open-prs' || github.event.inputs.action == 'full-cycle'
+        run: |
+          echo "Checking for open pull requests..."
+          curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "$REPO_URL/pulls?state=open" | jq '.'
+
+      - name: Close PR #2
+        if: github.event.inputs.action == 'close-pr-2' || github.event.inputs.action == 'full-cycle'
+        run: |
+          echo "Closing Pull Request #2..."
+          curl -s -X PATCH \
+            -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" \
+            -d '{"state": "closed"}' \
+            "$REPO_URL/pulls/$PR_NUMBER" | jq '.state, .closed_at'
+
+      - name: Create New Pull Request
+        if: github.event.inputs.action == 'create-new-pr' || github.event.inputs.action == 'full-cycle'
+        run: |
+          echo "Creating new Pull Request from $HEAD_BRANCH to $BASE_BRANCH..."
+          
+          TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+          TITLE="Automated PR - $TIMESTAMP"
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"title\": \"$TITLE\",
+              \"head\": \"$HEAD_BRANCH\",
+              \"base\": \"$BASE_BRANCH\",
+              \"body\": \"Created automatically via GitHub Actions workflow at $TIMESTAMP\"
+            }" \
+            "$REPO_URL/pulls")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          if [ "$HTTP_CODE" -eq 201 ]; then
+            NEW_PR_NUMBER=$(echo "$BODY" | jq '.number')
+            NEW_PR_URL=$(echo "$BODY" | jq -r '.html_url')
+            echo "Successfully created PR #$NEW_PR_NUMBER"
+            echo "View it here: $NEW_PR_URL"
+          elif [ "$HTTP_CODE" -eq 422 ]; then
+            echo "Could not create PR (422 Unprocessable Entity)"
+            echo "This usually means a PR already exists for these branches."
+            exit 1
+          else
+            echo "Failed to create PR. HTTP Code: $HTTP_CODE"
+            exit 1
+          fi
+
+      - name: Workflow Summary
+        if: always()
+        run: |
+          echo "Workflow Execution Summary:"
+          echo "- Action requested: ${{ github.event.inputs.action }}"
+          echo "- Repository: shivxcodes/Kiwi_Playwright_Integration"
+          echo "- Target branch: ${{ env.BASE_BRANCH }}"
+          echo "- Source branch: ${{ env.HEAD_BRANCH }}"
+          
+          if [ "${{ github.event.inputs.action }}" == "full-cycle" ]; then
+            echo "Full cycle completed: Checked → Closed → Created"
+          fi
